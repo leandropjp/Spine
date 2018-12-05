@@ -122,6 +122,8 @@ open class JSONAPIRouter: Router {
 					if let relationship = relatedResourceType.field(named: part) as? Relationship {
 						keys.append(keyFormatter.format(relationship))
 						relatedResourceType = relationship.linkedType
+					} else {
+						keys.append(part)
 					}
 				}
 				
