@@ -93,11 +93,11 @@ open class HTTPClient: NetworkClient {
 		for (key, value) in headers {
 			request.setValue(value, forHTTPHeaderField: key)
 		}
-		
+
 		if let payload = payload {
 			request.httpBody = payload
 		}
-		
+		print("Headers >> \(headers)")
 		return request
 	}
 
@@ -139,7 +139,8 @@ open class HTTPClient: NetworkClient {
 					Spine.logDebug(.networking, stringRepresentation)
 				}
 			}
-			
+
+            self.delegate?.httpClient(self, didReceiveResponse: response)
 			self.delegate?.httpClient(self, didPerformRequestWithMethod: method, url: url, success: success)
 			callback(response?.statusCode, data, networkError as NSError?)
 		}) 
@@ -169,4 +170,13 @@ public protocol HTTPClientDelegate {
 	- parameter success: Whether the reques was successful. Network and error responses are consided unsuccessful.
 	*/
 	func httpClient(_ client: HTTPClient, didPerformRequestWithMethod method: String, url: URL, success: Bool)
+
+    /**
+     Called after the HTTPClient performed an HTTP request. This method is called after the request finished,
+     but before the request has been processed by the NetworkClientCallback that was initially passed.
+
+     - parameter client:  The client that performed the request.
+     - parameter response: HTTP response.
+     */
+    func httpClient(_ client: HTTPClient, didReceiveResponse response: HTTPURLResponse?)
 }
