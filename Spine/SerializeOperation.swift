@@ -91,7 +91,9 @@ class SerializeOperation: Operation {
 			}
 		}
 		
-		serializedData["attributes"] = attributes
+		if attributes.count > 0 {
+      			serializedData["attributes"] = attributes
+    		}
 	}
 
 	
