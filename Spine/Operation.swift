@@ -211,7 +211,7 @@ class DeleteOperation: ConcurrentOperation {
 class SaveOperation: ConcurrentOperation {
 	/// The resource to save.
 	let resource: Resource
-    var extraResource: Resource?
+    var responseResource: Resource?
 	/// The result of the operation. You can safely force unwrap this in the completionBlock.
 	var result: Failable<Void, SpineError>?
 	
@@ -229,10 +229,10 @@ class SaveOperation: ConcurrentOperation {
 		self.relationshipOperationQueue.addObserver(self, forKeyPath: "operations", context: nil)
 	}
 
-    init(resource: [Resource], spine: Spine) {
-        self.resource = resource[0]
-        self.extraResource = resource[1]
-        self.isNewResource = (resource[0].id == nil)
+    init<T: Resource>(resource: Resource, responseType: T? = nil, spine: Spine) {
+        self.resource = resource
+        self.responseResource = responseType
+        self.isNewResource = (resource.id == nil)
         super.init()
         self.spine = spine
         self.relationshipOperationQueue.maxConcurrentOperationCount = 1
@@ -298,7 +298,7 @@ class SaveOperation: ConcurrentOperation {
 			if let data = responseData , data.count > 0 {
 				do {
 					// Don't map onto the resources if the response is not in the success range.
-                    let resources = self.extraResource != nil ? [self.extraResource!,self.resource] : [self.resource]
+                    let resources = self.responseResource != nil ? [self.responseResource!] : [self.resource]
 					let mappingTargets: [Resource]? = success ? resources : nil
 					document = try self.serializer.deserializeData(data, mappingTargets: mappingTargets)
 				} catch let error {
