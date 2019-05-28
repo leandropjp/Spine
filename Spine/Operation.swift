@@ -266,9 +266,9 @@ class SaveOperation: ConcurrentOperation {
             method = "POST"
             if let idGenerator = spine.idGenerator {
                 resource.id = idGenerator(resource)
-                options = [.IncludeToOne, .IncludeToMany, .IncludeID]
+                options = [.IncludeToOne, .IncludeToMany, .IncludeID, .OmitNullValues]
             } else {
-                options = [.IncludeToOne, .IncludeToMany]
+                options = [.IncludeToOne, .IncludeToMany, .OmitNullValues]
             }
         } else {
             if let customPath = self.customPath,
@@ -278,7 +278,7 @@ class SaveOperation: ConcurrentOperation {
                 url = router.urlForQuery(Query(resource: resource))
             }
             method = "PATCH"
-            options = [.IncludeID]
+            options = [.IncludeID, .OmitNullValues]
         }
 
         let payload: Data
