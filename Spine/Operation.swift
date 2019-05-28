@@ -277,7 +277,7 @@ class SaveOperation: ConcurrentOperation {
             } else {
                 url = router.urlForQuery(Query(resource: resource))
             }
-            method = "PATCH"
+            method = "PUT"
             options = [.IncludeID, .OmitNullValues]
         }
 
@@ -440,7 +440,7 @@ private class RelationshipReplaceOperation: RelationshipOperation {
         }
 
         Spine.logInfo(.spine, "Replacing relationship \(relationship) using URL: \(url)")
-        networkClient.request(method: "PATCH", url: url, payload: payload, callback: handleNetworkResponse)
+        networkClient.request(method: "PUT", url: url, payload: payload, callback: handleNetworkResponse)
     }
 }
 
