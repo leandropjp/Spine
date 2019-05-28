@@ -272,7 +272,7 @@ class SaveOperation: ConcurrentOperation {
             }
         } else {
             if let customPath = self.customPath,
-                let newUrl = URL(string: router.urlForQuery(Query(resource: resource)).absoluteString + "/\(resource.id ?? "")/\(customPath)") {
+                let newUrl = URL(string: router.urlForQuery(Query(resource: resource)).absoluteString + "/\(customPath)") {
                 url = newUrl
             } else {
                 url = router.urlForQuery(Query(resource: resource))
