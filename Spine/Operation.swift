@@ -439,6 +439,12 @@ private class RelationshipReplaceOperation: RelationshipOperation {
             return
         }
 
+        if let json = try? JSONSerialization.jsonObject(with: payload, options: [.allowFragments]) as? [String: Any],
+            let _ = json["data"] as? NSNull {
+            handleNetworkResponse(200, responseData: nil, networkError: nil)
+            return
+        }
+
         Spine.logInfo(.spine, "Replacing relationship \(relationship) using URL: \(url)")
         networkClient.request(method: "PUT", url: url, payload: payload, callback: handleNetworkResponse)
     }
@@ -484,6 +490,12 @@ private class RelationshipMutateOperation: RelationshipOperation {
 
         let url = router.urlForRelationship(relationship, ofResource: resource)
         let payload = try! serializer.serializeLinkData(relatedResources)
+
+        if let json = try? JSONSerialization.jsonObject(with: payload, options: [.allowFragments]) as? [String: Any],
+            let _ = json["data"] as? NSNull {
+            handleNetworkResponse(200, responseData: nil, networkError: nil)
+            return
+        }
         Spine.logInfo(.spine, "Mutating relationship \(relationship) using URL: \(url)")
         networkClient.request(method: httpMethod, url: url, payload: payload, callback: handleNetworkResponse)
     }
