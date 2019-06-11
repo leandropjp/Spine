@@ -135,6 +135,8 @@ class SerializeOperation: Operation {
 			serializedId = resourceId
 		} else {
 			serializedId = NSNull()
+            //Remove relationships with empty id
+            return
 		}
 		
 		let serializedRelationship = [
@@ -171,10 +173,11 @@ class SerializeOperation: Operation {
 		let serializedRelationship = [
 			"data": resourceIdentifiers.map { $0.toDictionary() }
 		]
-		
-		if serializedData["relationships"] == nil {
+
+        //Remove relationships with empty data
+		if serializedData["relationships"] == nil && !(serializedRelationship["data"]?.isEmpty ?? true) {
 			serializedData["relationships"] = [key: serializedRelationship]
-		} else {
+		} else if !(serializedRelationship["data"]?.isEmpty ?? true) {
 			var relationships = serializedData["relationships"] as! [String: Any]
 			relationships[key] = serializedRelationship
 			serializedData["relationships"] = relationships
