@@ -19,14 +19,14 @@ public struct ResourceIdentifier: Equatable {
 	public private(set) var id: String
 
 	/// Constructs a new ResourceIdentifier instance with given `type` and `id`.
-	init(type: ResourceType, id: String) {
+	public init(type: ResourceType, id: String) {
 		self.type = type
 		self.id = id
 	}
 
 	/// Constructs a new ResourceIdentifier instance from the given dictionary.
 	/// The dictionary must contain values for the "type" and "id" keys.
-	init(dictionary: NSDictionary) {
+	public init(dictionary: NSDictionary) {
 		type = dictionary["type"] as! ResourceType
 		id = dictionary["id"] as! String
 	}
