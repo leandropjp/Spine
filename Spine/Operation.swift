@@ -283,6 +283,17 @@ class SaveOperation: ConcurrentOperation {
 
         let payload: Data
 
+        var attributeCount = 0
+        for case let field as Attribute in resource.fields where field.isReadOnly == false {
+            attributeCount += 1
+        }
+
+        if attributeCount == 0 && method == "PUT" {
+            self.result = .success(())
+            state = .finished
+            return
+        }
+
         do {
             payload = try serializer.serializeResources([resource], options: options)
         } catch let error {
