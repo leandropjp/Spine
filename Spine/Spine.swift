@@ -372,14 +372,16 @@ open class Spine {
 
     /// Saves the given resource.
     ///
-    /// - parameter resources: The resources to save and a possible different response type.
+    /// - parameter resource: The resources to save.
+    /// - parameter responseType: The response type.
+    /// - parameter customPath: The response type.
     ///
     /// - returns: A future that resolves to the saved resource.
-    open func save<T: Resource, W:Resource>(_ resource: T, responseType: W.Type) -> Future<W, SpineError> {
+    open func save<T: Resource, W:Resource>(_ resource: T, responseType: W.Type, customPath: String? = nil) -> Future<W, SpineError> {
         let promise = Promise<W, SpineError>()
 
         let response = responseType.init()
-        let operation = SaveOperation(resource: resource, responseType: response, spine: self)
+        let operation = SaveOperation(resource: resource, responseType: response, spine: self, customPath: customPath)
 
         operation.completionBlock = { [unowned operation] in
             if let error = operation.result?.error {
