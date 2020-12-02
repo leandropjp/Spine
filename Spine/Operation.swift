@@ -232,7 +232,7 @@ class SaveOperation: ConcurrentOperation {
         self.customPath = customPath
     }
 
-    init<T: Resource>(resource: Resource, responseType: T? = nil, spine: Spine) {
+    init<T: Resource>(resource: Resource, responseType: T? = nil, spine: Spine, customPath: String? = nil) {
         self.resource = resource
         self.responseResource = responseType
         self.isNewResource = (resource.id == nil)
@@ -240,6 +240,7 @@ class SaveOperation: ConcurrentOperation {
         self.spine = spine
         self.relationshipOperationQueue.maxConcurrentOperationCount = 1
         self.relationshipOperationQueue.addObserver(self, forKeyPath: "operations", context: nil)
+        self.customPath = customPath
     }
 
     deinit {
