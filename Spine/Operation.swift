@@ -171,19 +171,27 @@ class DeleteOperation: ConcurrentOperation {
 
     /// The result of the operation. You can safely force unwrap this in the completionBlock.
     var result: Failable<Void, SpineError>?
+    
+    /// Custom path to be add to the end of url
+    var customPath: String?
 
-    init(resource: Resource, spine: Spine) {
+    init(resource: Resource, spine: Spine, customPath: String? = nil) {
         self.resource = resource
         super.init()
         self.spine = spine
+        self.customPath = customPath
     }
 
     override func execute() {
-        let URL = spine.router.urlForQuery(Query(resource: resource))
+        var url = spine.router.urlForResourceType(resource.resourceType).appendingPathComponent(resource.id ?? "")
 
-        Spine.logInfo(.spine, "Deleting resource \(resource) using URL: \(URL)")
+        if let customPath = self.customPath {
+            url = url.appendingPathComponent(customPath)
+        }
 
-        networkClient.request(method: "DELETE", url: URL) { statusCode, responseData, networkError in
+        Spine.logInfo(.spine, "Deleting resource \(resource) using URL: \(url)")
+
+        networkClient.request(method: "DELETE", url: url) { statusCode, responseData, networkError in
             defer { self.state = .finished }
 
             guard networkError == nil else {
@@ -272,13 +280,15 @@ class SaveOperation: ConcurrentOperation {
                 options = [.IncludeToOne, .IncludeToMany, .OmitNullValues]
             }
         } else {
-            if let customPath = self.customPath,
-                let newUrl = URL(string: router.urlForQuery(Query(resource: resource)).absoluteString + "/\(customPath)") {
-                url = newUrl
+            if let customPath = self.customPath {
+                method = "POST"
+                let rUrl = spine.router.urlForResourceType(resource.resourceType).appendingPathComponent(resource.id ?? "")
+                url = rUrl.appendingPathComponent(customPath)
             } else {
                 url = router.urlForQuery(Query(resource: resource))
+                method = "PUT"
             }
-            method = "PUT"
+
             options = [.IncludeID, .OmitNullValues]
         }
 
