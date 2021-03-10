@@ -418,6 +418,28 @@ open class Spine {
 
 		return promise.future
 	}
+    /// Deletes the given resource.
+    ///
+    /// - parameter resource: The resource to delete.
+    /// - parameter customPath: Custom path to be added to the end of url
+    ///
+    /// - returns: A future
+    open func delete<T: Resource>(_ resource: T, customPath: String? = nil) -> Future<Void, SpineError> {
+        let promise = Promise<Void, SpineError>()
+        let operation = DeleteOperation(resource: resource, spine: self, customPath: customPath)
+
+        operation.completionBlock = { [unowned operation] in
+            if let error = operation.result?.error {
+                promise.failure(error)
+            } else {
+                promise.success(())
+            }
+        }
+
+        addOperation(operation)
+
+        return promise.future
+    }
 }
 
 public extension Spine {
