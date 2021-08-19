@@ -112,8 +112,8 @@ open class Spine {
 	/// - parameter query: The query describing which resources to fetch.
 	///
 	/// - returns: A future that resolves to a tuple containing the fetched ResourceCollection, the document meta, and the document jsonapi object.
-	open func find<T>(_ query: Query<T>) -> Future<(resources: ResourceCollection, meta: Metadata?, jsonapi: JSONAPIData?), SpineError> {
-		let promise = Promise<(resources: ResourceCollection, meta: Metadata?, jsonapi: JSONAPIData?), SpineError>()
+    open func find<T>(_ query: Query<T>) -> Future<(resources: ResourceCollection, meta: Metadata?, jsonapi: JSONAPIData?, document: JSONAPIDocument), SpineError> {
+        let promise = Promise<(resources: ResourceCollection, meta: Metadata?, jsonapi: JSONAPIData?, document: JSONAPIDocument), SpineError>()
 
 		let operation = FetchOperation(query: query, spine: self)
 
@@ -121,7 +121,10 @@ open class Spine {
 
 			switch operation.result! {
 			case .success(let document):
-				let response = (ResourceCollection(document: document), document.meta, document.jsonapi)
+				let response = (ResourceCollection(document: document),
+                                document.meta,
+                                document.jsonapi,
+                                document)
 				promise.success(response)
 			case .failure(let error):
 				promise.failure(error)
@@ -139,7 +142,7 @@ open class Spine {
 	/// - parameter type: The type of resource to fetch.
 	///
 	/// - returns: A future that resolves to a tuple containing the fetched ResourceCollection, the document meta, and the document jsonapi object.
-	open func find<T: Resource>(_ ids: [String], ofType type: T.Type) -> Future<(resources: ResourceCollection, meta: Metadata?, jsonapi: JSONAPIData?), SpineError> {
+    open func find<T: Resource>(_ ids: [String], ofType type: T.Type) -> Future<(resources: ResourceCollection, meta: Metadata?, jsonapi: JSONAPIData?, document: JSONAPIDocument), SpineError> {
 		let query = Query(resourceType: type, resourceIDs: ids)
 		return find(query)
 	}
@@ -193,7 +196,7 @@ open class Spine {
 	/// - parameter type: The type of resource to fetch.
 	///
 	/// - returns: A future that resolves to a tuple containing the fetched ResourceCollection, the document meta, and the document jsonapi object.
-	open func findAll<T: Resource>(_ type: T.Type) -> Future<(resources: ResourceCollection, meta: Metadata?, jsonapi: JSONAPIData?), SpineError> {
+    open func findAll<T: Resource>(_ type: T.Type) -> Future<(resources: ResourceCollection, meta: Metadata?, jsonapi: JSONAPIData?, document: JSONAPIDocument), SpineError> {
 		let query = Query(resourceType: type)
 		return find(query)
 	}
@@ -277,8 +280,8 @@ open class Spine {
 	/// - parameter collection: The collection for which to load the next page.
 	///
 	/// - returns: A future that resolves to the ResourceCollection including the newly loaded resources.
-	open func loadNextPageOfCollection(_ collection: ResourceCollection) -> Future<ResourceCollection, SpineError> {
-		let promise = Promise<ResourceCollection, SpineError>()
+	open func loadNextPageOfCollection(_ collection: ResourceCollection) -> Future<(ResourceCollection, JSONAPIDocument), SpineError> {
+		let promise = Promise<(ResourceCollection, JSONAPIDocument), SpineError>()
 
 		if let nextURL = collection.nextURL {
 			let query = Query(url: nextURL)
@@ -293,7 +296,7 @@ open class Spine {
 					collection.nextURL = nextCollection.nextURL
 					collection.previousURL = nextCollection.previousURL
 
-					promise.success(collection)
+                    promise.success((collection, document))
 				case .failure(let error):
 					promise.failure(error)
 				}
@@ -307,6 +310,37 @@ open class Spine {
 
 		return promise.future
 	}
+    
+    open func loadNextPageOfCollectionJSON(_ collection: ResourceCollection) -> Future<(ResourceCollection, JSONAPIDocument), SpineError> {
+        let promise = Promise<(ResourceCollection, JSONAPIDocument), SpineError>()
+
+        if let nextURL = collection.nextURL {
+            let query = Query(url: nextURL)
+            let operation = FetchOperation(query: query, spine: self)
+
+            operation.completionBlock = { [unowned operation] in
+                switch operation.result! {
+                case .success(let document):
+                    let nextCollection = ResourceCollection(document: document)
+                    collection.resources += nextCollection.resources
+                    collection.resourcesURL = nextCollection.resourcesURL
+                    collection.nextURL = nextCollection.nextURL
+                    collection.previousURL = nextCollection.previousURL
+
+                    promise.success((collection, document))
+                case .failure(let error):
+                    promise.failure(error)
+                }
+            }
+
+            addOperation(operation)
+
+        } else {
+            promise.failure(SpineError.nextPageNotAvailable)
+        }
+
+        return promise.future
+    }
 
 	/// Loads the previous page of the given resource collection. The newly loaded resources are prepended to the passed collection.
 	/// When the previous page is not available, the returned future will fail with a `PreviousPageNotAvailable` error code.
