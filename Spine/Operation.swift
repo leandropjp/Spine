@@ -270,7 +270,7 @@ class SaveOperation: ConcurrentOperation {
         let method: String
         let options: SerializationOptions
 
-        if isNewResource {
+        if isNewResource && self.customPath == nil {
             url = router.urlForResourceType(resource.resourceType)
             method = "POST"
             if let idGenerator = spine.idGenerator {
