@@ -225,6 +225,8 @@ class SaveOperation: ConcurrentOperation {
 
     /// Custom path to be add to the end of url
     var customPath: String?
+    /// Custom method to be to use in request
+    var method: String?
     /// Whether the resource is a new resource, or an existing resource.
     fileprivate let isNewResource: Bool
 
@@ -238,6 +240,17 @@ class SaveOperation: ConcurrentOperation {
         self.relationshipOperationQueue.maxConcurrentOperationCount = 1
         self.relationshipOperationQueue.addObserver(self, forKeyPath: "operations", context: nil)
         self.customPath = customPath
+    }
+    
+    init(resource: Resource, spine: Spine, customPath: String? = nil, method: String? = nil) {
+        self.resource = resource
+        self.isNewResource = (resource.id == nil)
+        super.init()
+        self.spine = spine
+        self.relationshipOperationQueue.maxConcurrentOperationCount = 1
+        self.relationshipOperationQueue.addObserver(self, forKeyPath: "operations", context: nil)
+        self.customPath = customPath
+        self.method = method
     }
 
     init<T: Resource>(resource: Resource, responseType: T? = nil, spine: Spine, customPath: String? = nil) {
@@ -264,15 +277,19 @@ class SaveOperation: ConcurrentOperation {
             updateRelationships()
         }
     }
-
+    
     fileprivate func updateResource() {
         let url: URL
-        let method: String
+        var method: String
         let options: SerializationOptions
-
+        
         if isNewResource && self.customPath == nil {
             url = router.urlForResourceType(resource.resourceType)
-            method = "POST"
+            if let customMethod = self.method {
+                method = customMethod
+            } else {
+                method = "POST"
+            }
             if let idGenerator = spine.idGenerator {
                 resource.id = idGenerator(resource)
                 options = [.IncludeToOne, .IncludeToMany, .IncludeID, .OmitNullValues]
@@ -281,30 +298,38 @@ class SaveOperation: ConcurrentOperation {
             }
         } else {
             if let customPath = self.customPath {
-                method = "POST"
+                if let customMethod = self.method {
+                    method = customMethod
+                } else {
+                    method = "POST"
+                }
                 let rUrl = spine.router.urlForResourceType(resource.resourceType).appendingPathComponent(resource.id ?? "")
                 url = rUrl.appendingPathComponent(customPath)
             } else {
                 url = router.urlForQuery(Query(resource: resource))
-                method = "PUT"
+                if let customMethod = self.method {
+                    method = customMethod
+                } else {
+                    method = "PUT"
+                }
             }
-
+            
             options = [.IncludeID, .OmitNullValues]
         }
-
+        
         let payload: Data
-
+        
         var attributeCount = 0
         for case let field as Attribute in resource.fields where field.isReadOnly == false {
             attributeCount += 1
         }
-
+        
         if attributeCount == 0 && method == "PUT" {
             self.result = .success(())
             state = .finished
             return
         }
-
+        
         do {
             payload = try serializer.serializeResources([resource], options: options)
         } catch let error {
@@ -312,17 +337,17 @@ class SaveOperation: ConcurrentOperation {
             state = .finished
             return
         }
-
+        
         Spine.logInfo(.spine, "Saving resource \(resource) using URL: \(url)")
-
+        
         networkClient.request(method: method, url: url, payload: payload) { statusCode, responseData, networkError in
             defer { self.state = .finished }
-
+            
             if let error = networkError {
                 self.result = .failure(.networkError(error))
                 return
             }
-
+            
             let success = statusCodeIsSuccess(statusCode)
             let document: JSONAPIDocument?
             if let data = responseData , data.count > 0 {
@@ -338,7 +363,7 @@ class SaveOperation: ConcurrentOperation {
             } else {
                 document = nil
             }
-
+            
             if success {
                 self.result = .success(())
             } else {
@@ -346,7 +371,6 @@ class SaveOperation: ConcurrentOperation {
             }
         }
     }
-
     /// Serializes `resource` into NSData using `options`. Any error that occurs is rethrown as a SpineError.
     fileprivate func serializePayload(_ resource: Resource, options: SerializationOptions) throws -> Data {
         do {
