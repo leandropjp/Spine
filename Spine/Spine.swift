@@ -379,6 +379,29 @@ open class Spine {
 		return promise.future
 	}
 
+    // MARK: Persisting
+
+    /// Saves the given resource.
+    ///
+    /// - parameter resource: The resource to save.
+    ///
+    /// - returns: A future that resolves to the saved resource.
+    open func save<T: Resource>(_ resource: T, customPath: String? = nil, method: String? = nil) -> Future<T, SpineError> {
+        let promise = Promise<T, SpineError>()
+        let operation = SaveOperation(resource: resource, spine: self, customPath: customPath, method: method)
+
+        operation.completionBlock = { [unowned operation] in
+            if let error = operation.result?.error {
+                promise.failure(error)
+            } else {
+                promise.success(resource)
+            }
+        }
+
+        addOperation(operation)
+
+        return promise.future
+    }
 
 	// MARK: Persisting
 
